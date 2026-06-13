@@ -82,7 +82,7 @@ export default function App() {
           'Authorization': 'Bearer ' + apiKey,
         },
         body: JSON.stringify({
-          model: 'llama3-8b-8192',
+          model: 'groq-1.5-8k',
           max_tokens: 1500,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
