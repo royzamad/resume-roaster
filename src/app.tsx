@@ -53,6 +53,47 @@ const chanceColors: Record<string, string> = {
   'No': 'text-red-400',
 }
 
+async function selectGroqModel(apiKey: string): Promise<string> {
+  const response = await fetch('https://api.groq.com/openai/v1/models', {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Bearer ' + apiKey,
+    },
+  })
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => null)
+    throw new Error(errData?.error?.message || 'Unable to fetch Groq models. Check your key.')
+  }
+
+  const data = await response.json()
+  const modelItems = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+    ? data.data
+    : []
+
+  const models = modelItems
+    .map((item: any) => item?.id || item?.model || item)
+    .filter(Boolean)
+
+  const preferred = [
+    'llama3-8b-8192',
+    'llama3-8b',
+    'groq-1.5-8k',
+    'groq-1.5-8b',
+    'groq-8',
+    'groq-70',
+  ]
+
+  const selected = preferred.find(model => models.includes(model)) || models[0]
+  if (!selected) {
+    throw new Error('No available Groq models were found for this key.')
+  }
+
+  return selected
+}
+
 export default function App() {
   const [cvText, setCvText] = useState<string>('')
   const [apiKey, setApiKey] = useState<string>('')
@@ -75,14 +116,15 @@ export default function App() {
     setFeedback(null)
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/chat/completions', {
+      const model = await selectGroqModel(apiKey)
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': apiKey,
+          'Authorization': 'Bearer ' + apiKey,
         },
         body: JSON.stringify({
-          model: 'claude-3.5',
+          model,
           max_tokens: 1500,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
@@ -97,7 +139,7 @@ export default function App() {
       }
 
       const data = await response.json()
-      const text = data.completion ?? data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text
+      const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text
       if (!text) {
         throw new Error('No response text returned from the API.')
       }
@@ -127,20 +169,20 @@ export default function App() {
       <div className="space-y-4 mb-6">
         <div>
           <label className="block text-sm text-gray-400 mb-1">
-            Claude API Key{' '}
+            Groq API Key{' '}
             <a
-              href="https://console.anthropic.com"
+              href="https://console.groq.com"
               target="_blank"
               rel="noreferrer"
               className="text-blue-400 hover:underline"
             >
-              (get one free at console.anthropic.com)
+              (get one free at console.groq.com)
             </a>
           </label>
           <input
             type="password"
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            placeholder="sk-..."
+            placeholder="gsk_..."
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
           />

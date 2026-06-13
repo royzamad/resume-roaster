@@ -2,7 +2,7 @@
 
 Paste your CV and get brutally honest feedback. No "consider adding action verbs" nonsense — it tells you exactly what a real hiring manager would think when they read it.
 
-**Built with:** React · TypeScript · Tailwind CSS · Claude AI API
+**Built with:** React · TypeScript · Tailwind CSS · Groq API
 
 ## What it checks
 - Bullets that sound AI generated
@@ -19,4 +19,4 @@ npm run dev
 ```
 
 ## API
-Uses Anthropic's Claude API. Get a free API key at console.anthropic.com
+Uses Groq's API. Get a free API key at console.groq.com
