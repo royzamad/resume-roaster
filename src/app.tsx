@@ -56,6 +56,7 @@ const chanceColors: Record<string, string> = {
 export default function App() {
   const [cvText, setCvText] = useState<string>('')
   const [apiKey, setApiKey] = useState<string>('')
+  const [modelName, setModelName] = useState<string>('groq-70')
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
@@ -82,7 +83,7 @@ export default function App() {
           'Authorization': 'Bearer ' + apiKey,
         },
         body: JSON.stringify({
-          model: 'groq-8',
+          model: modelName,
           max_tokens: 1500,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
@@ -141,6 +142,22 @@ export default function App() {
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
           />
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">
+            Groq Model
+          </label>
+          <input
+            type="text"
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+            placeholder="groq-70"
+            value={modelName}
+            onChange={e => setModelName(e.target.value)}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Default is groq-70. Change this if your account supports another model.
+          </p>
         </div>
 
         <div>
