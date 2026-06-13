@@ -56,7 +56,6 @@ const chanceColors: Record<string, string> = {
 export default function App() {
   const [cvText, setCvText] = useState<string>('')
   const [apiKey, setApiKey] = useState<string>('')
-  const [modelName, setModelName] = useState<string>('groq-70')
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
@@ -76,14 +75,14 @@ export default function App() {
     setFeedback(null)
 
     try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const response = await fetch('https://api.anthropic.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey,
+          'X-API-Key': apiKey,
         },
         body: JSON.stringify({
-          model: modelName,
+          model: 'claude-3.5',
           max_tokens: 1500,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
@@ -98,7 +97,10 @@ export default function App() {
       }
 
       const data = await response.json()
-      const text = data.choices[0].message.content
+      const text = data.completion ?? data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text
+      if (!text) {
+        throw new Error('No response text returned from the API.')
+      }
       const clean = text.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(clean) as Feedback
       setFeedback(parsed)
@@ -125,39 +127,23 @@ export default function App() {
       <div className="space-y-4 mb-6">
         <div>
           <label className="block text-sm text-gray-400 mb-1">
-            Groq API Key{' '}
+            Claude API Key{' '}
             <a
-              href="https://console.groq.com"
+              href="https://console.anthropic.com"
               target="_blank"
               rel="noreferrer"
               className="text-blue-400 hover:underline"
             >
-              (get one free at console.groq.com)
+              (get one free at console.anthropic.com)
             </a>
           </label>
           <input
             type="password"
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            placeholder="gsk_..."
+            placeholder="sk-..."
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
           />
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">
-            Groq Model
-          </label>
-          <input
-            type="text"
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            placeholder="groq-70"
-            value={modelName}
-            onChange={e => setModelName(e.target.value)}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Default is groq-70. Change this if your account supports another model.
-          </p>
         </div>
 
         <div>
