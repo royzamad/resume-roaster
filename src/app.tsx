@@ -125,7 +125,7 @@ export default function App() {
         <div>
           <label className="block text-sm text-gray-400 mb-1">
             Groq API Key{' '}
-            
+            <a
               href="https://console.groq.com"
               target="_blank"
               rel="noreferrer"
