@@ -5,7 +5,7 @@ You review CVs and give direct, specific feedback without sugarcoating.
 You hate generic advice. You give feedback like a real person would — pointing out exactly 
 what's wrong and why it would make you skip a candidate.
 
-Analyse the CV and return ONLY a JSON object in this exact format, nothing else:
+Analyse the CV and return ONLY a JSON object in this exact format, nothing else, no markdown, no backticks:
 {
   "score": <number 1-10>,
   "verdict": "<2 sentence overall impression a hiring manager would have>",
@@ -13,7 +13,7 @@ Analyse the CV and return ONLY a JSON object in this exact format, nothing else:
     {
       "type": "<AI Generated | No Impact | Vague | Missing Numbers | Red Flag | Weak Opening | Gap>",
       "quote": "<exact text from the CV that has the problem, max 10 words>",
-      "problem": "<what's wrong with it in plain language>",
+      "problem": "<what is wrong with it in plain language>",
       "fix": "<exactly how to fix it>"
     }
   ],
@@ -66,7 +66,7 @@ export default function App() {
       return
     }
     if (!apiKey.trim()) {
-      setError('Enter your Claude API key.')
+      setError('Enter your Groq API key.')
       return
     }
 
@@ -75,34 +75,29 @@ export default function App() {
     setFeedback(null)
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
+          'Authorization': 'Bearer ' + apiKey,
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'llama3-8b-8192',
           max_tokens: 1500,
-          system: SYSTEM_PROMPT,
           messages: [
-            {
-              role: 'user',
-              content: 'Here is my CV:\n\n' + cvText
-            }
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: 'Here is my CV:\n\n' + cvText }
           ]
         })
       })
 
       if (!response.ok) {
         const errData = await response.json()
-        throw new Error(errData.error?.message || 'API error')
+        throw new Error(errData.error?.message || 'API error — check your key')
       }
 
       const data = await response.json()
-      const text = data.content[0].text
+      const text = data.choices[0].message.content
       const clean = text.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(clean) as Feedback
       setFeedback(parsed)
@@ -129,20 +124,20 @@ export default function App() {
       <div className="space-y-4 mb-6">
         <div>
           <label className="block text-sm text-gray-400 mb-1">
-            Claude API Key{' '}
+            Groq API Key{' '}
             
-              href="https://console.anthropic.com"
+              href="https://console.groq.com"
               target="_blank"
               rel="noreferrer"
               className="text-blue-400 hover:underline"
             >
-              (get one free here)
+              (get one free at console.groq.com)
             </a>
           </label>
           <input
             type="password"
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            placeholder="sk-ant-..."
+            placeholder="gsk_..."
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
           />
@@ -176,7 +171,6 @@ export default function App() {
 
       {feedback && (
         <div className="space-y-6">
-
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -195,7 +189,7 @@ export default function App() {
 
           {feedback.positives && feedback.positives.length > 0 && (
             <div className="bg-green-950 border border-green-800 rounded-xl p-5">
-              <h2 className="text-green-400 font-semibold mb-3">✓ What's working</h2>
+              <h2 className="text-green-400 font-semibold mb-3">✓ What is working</h2>
               <ul className="space-y-2">
                 {feedback.positives.map((p, i) => (
                   <li key={i} className="text-green-300 text-sm flex gap-2">
