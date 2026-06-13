@@ -82,7 +82,7 @@ export default function App() {
           'Authorization': 'Bearer ' + apiKey,
         },
         body: JSON.stringify({
-          model: 'groq-1.5-8k',
+          model: 'groq-8',
           max_tokens: 1500,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
