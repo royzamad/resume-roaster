@@ -94,6 +94,69 @@ async function selectGroqModel(apiKey: string): Promise<string> {
   return selected
 }
 
+function normalizeJsonString(raw: string): string {
+  return raw
+    .replace(/```json|```/g, '')
+    .trim()
+    .replace(/\r\n/g, '\n')
+}
+
+function parseFeedback(raw: string): Feedback {
+  const cleaned = normalizeJsonString(raw)
+  try {
+    return JSON.parse(cleaned) as Feedback
+  } catch (err) {
+    const sanitized = cleaned.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '')
+    try {
+      return JSON.parse(sanitized) as Feedback
+    } catch {
+      return parseLooseFeedback(sanitized)
+    }
+  }
+}
+
+function parseLooseFeedback(raw: string): Feedback {
+  const getString = (key: string): string => {
+    const match = new RegExp(`"${key}"\s*:\s*"([^"]*)"`, 'i').exec(raw)
+    return match ? match[1].replace(/\\"/g, '"') : ''
+  }
+
+  const getArray = (key: string): string[] => {
+    const match = new RegExp(`"${key}"\s*:\s*\[([\s\S]*?)\]`, 'i').exec(raw)
+    if (!match) return []
+    return match[1]
+      .split(/\n|,/) 
+      .map(item => item.trim().replace(/^"|"$/g, ''))
+      .filter(Boolean)
+  }
+
+  const getIssues = (): Issue[] => {
+    const issuesMatch = /"issues"\s*:\s*\[([\s\S]*?)\]\s*[,]?/i.exec(raw)
+    if (!issuesMatch) return []
+    const issueText = issuesMatch[1]
+    const issueBlocks = issueText.match(/\{[\s\S]*?\}/g) || []
+    return issueBlocks.map(block => ({
+      type: getAttribute(block, 'type'),
+      quote: getAttribute(block, 'quote'),
+      problem: getAttribute(block, 'problem'),
+      fix: getAttribute(block, 'fix'),
+    }))
+  }
+
+  const getAttribute = (block: string, key: string): string => {
+    const match = new RegExp(`"${key}"\s*:\s*"([^"]*)"`, 'i').exec(block)
+    return match ? match[1].replace(/\\"/g, '"') : ''
+  }
+
+  return {
+    score: Number(getString('score')) || 0,
+    verdict: getString('verdict'),
+    issues: getIssues(),
+    positives: getArray('positives'),
+    hiring_chance: getString('hiring_chance') || 'Unknown',
+  }
+}
+
 export default function App() {
   const [cvText, setCvText] = useState<string>('')
   const [apiKey, setApiKey] = useState<string>('')
@@ -143,8 +206,7 @@ export default function App() {
       if (!text) {
         throw new Error('No response text returned from the API.')
       }
-      const clean = text.replace(/```json|```/g, '').trim()
-      const parsed = JSON.parse(clean) as Feedback
+      const parsed = parseFeedback(text)
       setFeedback(parsed)
     } catch (err) {
       if (err instanceof Error) {
